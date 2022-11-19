@@ -12,7 +12,7 @@ def main():
     # define the hyperparameters
     hidden_size = 10
     num_classes = 10
-    num_epochs = 5
+    num_epochs = 20
     batch_size = 100
     learning_rate = 0.001
     val_split = 0.2
