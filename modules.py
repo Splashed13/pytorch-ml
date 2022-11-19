@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -43,7 +44,6 @@ class Trainer:
         # total number of batches
         for epoch in range(self.num_epochs):
             train_loss = 0
-            test_loss = 0
             window_training_loss = []
             for i, (images, labels) in enumerate(self.train_loader): # each batch 
                 # origin shape: [100, 1, 28, 28]
@@ -55,24 +55,49 @@ class Trainer:
                 outputs = self.model(images)
                 l = self.loss(outputs, labels)
                 train_loss = train_loss + l.item()
-                #p.plot_batch(i+1,l.item())
-                window_training_loss.append(l.item())
                 
                 # backward pass
                 self.optimizer.zero_grad()
-                l.backward()
+                l.backward() # calculate gradients
                 self.optimizer.step() # update the weights
 
-                if (i+1) % window_size == 0:
-                    print(f'Training... Epoch {epoch+1}/{self.num_epochs}, Step {i+1}/{n_total_steps}, Training Loss over 100 batchs = {sum(window_training_loss) / window_size:.4f}')
+                # for console output so we can track the progress
+                window_training_loss.append(l.item())
+                if (i+1) % (len(self.test_loader)+1) == 0:
+                    avg_train_loss_smoothed = sum(window_training_loss) / (len(self.test_loader)+1)
+                    print(f'Training... Epoch {epoch+1}/{self.num_epochs}, Step {i+1}/{n_total_steps}, Training Loss over 100 batches = {avg_train_loss_smoothed:.4f}')
                     window_training_loss.clear()
+                    # OR plot with this for every half number of test batches 
+                    batch_test_acc, batch_test_loss = self.test_acc_loss(type="batch_smoothed")
+                    y = [avg_train_loss_smoothed, batch_test_loss, batch_test_acc]
+                    p.plot_batch((i+1)+((epoch+1)*n_total_steps),y)
                 
-            
+                # plot loss over smoothness amount of steps (batches)
+                #p.plot_batch((i+1)+((epoch+1)*n_total_steps),l.item(),smoothness=20)
 
-            # evaluate over the entire test set for each epoch
+                # or plot over each batch
+                # batch_test_acc, batch_test_loss = self.test_acc_loss(type="batch")
+                # y = [l.item(), batch_test_acc, batch_test_loss]
+                # p.plot_batch((i+1)+((epoch+1)*n_total_steps),y)
+
+            avg_train_loss = train_loss / n_total_steps # epoch loss
+            # calculate test loss and accuracy
+            avg_test_epoch_loss, epoch_accuracy = self.test_acc_loss(type="epoch")
+
+            print(f'[Completed Epoch {epoch+1}/{self.num_epochs}] Step {i+1}/{n_total_steps} -> Avg Training Loss: {avg_train_loss:.4f}, Avg Test Loss: {avg_test_epoch_loss:.4f}, Model Accuracy: {epoch_accuracy*100:.2f}%')
+            p.plot_epoch(epoch + 1, avg_train_loss, avg_test_epoch_loss, epoch_accuracy)
+
+        input("Press Enter to Finish...")
+        sys.exit()
+    
+    # method that calculates the loss over a random single batch or all batches (if epoch) depending on the input
+    def test_acc_loss(self,type=None):
+        n_correct = 0
+        n_samples = 0
+        test_loss = 0
+        if type == "epoch":
             with torch.no_grad():
-                n_correct = 0
-                n_samples = 0
+
                 for k, (images, labels) in enumerate(self.test_loader):
                     images = images.reshape(-1, 28*28).to(self.device)
                     labels = labels.to(self.device)
@@ -81,30 +106,56 @@ class Trainer:
                     test_loss = test_loss + l2.item()
                     n_samples = n_samples + labels.shape[0]
                     n_correct = n_correct + (outputs.argmax(1) == labels).sum().item()
-
-            avg_train_loss = train_loss / n_total_steps
             avg_test_loss = test_loss / (k+1)
-            accuracy = n_correct / n_samples
-            print(f'[Completed Epoch {epoch+1}/{self.num_epochs}] Step {i+1}/{n_total_steps} -> Avg Training Loss: {avg_train_loss:.4f}, Avg Test Loss: {avg_test_loss:.4f}, Model Accuracy: {accuracy*100:.2f}%')
-            
-            #p.plot_epoch(epoch + 1, avg_train_loss, avg_test_loss, accuracy)
-            
-        input("Press Enter to Finish...")
-            
-                            
-    # plot the train_loss, test_loss and accuracy for each iterations of the generator inputs on the same plot 
-    def animate(self):
-        plt.clf()
-        plt.plot(self.x1, self.y1, label='train_loss')
-        plt.plot(self.x1, self.y2, label='test_loss')
-        plt.plot(self.x1, self.y3, label='accuracy')
-        plt.legend()
-        plt.pause(0.001)
-
-
-
+            avg_accuracy = n_correct / n_samples
+            return avg_test_loss, avg_accuracy
         
-            
+        # calculate loss and accuracy over a random batch
+        elif type == "batch":
+            with torch.no_grad():
+                # randomly number between 0 and the number of batches for the test set
+                random_batch = random.randint(0,len(self.test_loader)-1)
+                for k, (images, labels) in enumerate(self.test_loader):
+                    if random_batch == k:
+                        images = images.reshape(-1, 28*28).to(self.device)
+                        labels = labels.to(self.device)
+                        outputs = self.model(images)
+                        l2 = self.loss(outputs, labels)
+                        test_loss = l2.item()
+                        n_samples = labels.shape[0]
+                        n_correct = (outputs.argmax(1) == labels).sum().item()
+                    else:
+                        continue
+                accuracy = n_correct / n_samples
+                return test_loss, accuracy
+
+        elif type == "batch_smoothed":
+            i = 0
+            with torch.no_grad():
+                # randomly generate batches/2 numbers between 0 and the number of batches for the test set
+                random_batch = random.sample(range(0,len(self.test_loader)-1),int(len(self.test_loader)/2))
+                for k, (images, labels) in enumerate(self.test_loader):
+                    if k in random_batch:
+                        i = i + 1
+                        images = images.reshape(-1, 28*28).to(self.device)
+                        labels = labels.to(self.device)
+                        outputs = self.model(images)
+                        l2 = self.loss(outputs, labels)
+                        test_loss = test_loss + l2.item()
+                        n_samples = n_samples + labels.shape[0]
+                        n_correct = n_correct + (outputs.argmax(1) == labels).sum().item()
+                    else:
+                        continue
+                avg_test_loss = test_loss / i
+                avg_accuracy = n_correct / n_samples
+                return avg_test_loss, avg_accuracy
+
+
+
+        else:
+            print("Invalid type argument. Please use 'epoch' or 'batch'")
+            # exit program
+            sys.exit()
 
 
 

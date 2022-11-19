@@ -10,9 +10,9 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # define the hyperparameters
-    hidden_size = 10
+    hidden_size:int = 10
     num_classes = 10
-    num_epochs = 20
+    num_epochs = 7
     batch_size = 100
     learning_rate = 0.001
     val_split = 0.2
