@@ -2,10 +2,9 @@ import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 import random
 from plotter import Plotter
-from torch.utils.data import DataLoader
+
 
 class Net(nn.Module):
     def __init__(self, l1=120, l2=84):
@@ -135,7 +134,7 @@ class Trainer:
 
         self.print_accuracy()
 
-    # method get gets the accuracy for each label and prints them- it is run at the end of the training
+    # method gets the accuracy for each label and prints them at the end of the training
     def print_accuracy(self):
         # overall accuracy
         correct = [0 for i in range(self.model.num_labels)]
@@ -147,6 +146,7 @@ class Trainer:
                 outputs = self.model(images)
                 _, predicted = torch.max(outputs, 1)
                 c = (predicted == labels).squeeze()
+
                 for i in range(len(labels)):
                     label = labels[i]
                     correct[label] += c[i].item()
@@ -206,7 +206,6 @@ class Trainer:
             print("Invalid type argument. Please use 'epoch' or 'batch'")
             # exit program
             sys.exit()
-
 
 
 

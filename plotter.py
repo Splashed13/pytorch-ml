@@ -1,13 +1,17 @@
+from typing import List, Any
+
 import matplotlib.pyplot as plt
+
 
 class Plotter:
     # subplot 1: loss & accuracy vs epoch
     # subplot 2: training loss vs batch
 
-    # change class below to use a subplot with with two methods plot_epoch and plot_batch drawing each subplot respectively
+    # change class below to use a subplot with two methods plot_epoch and plot_batch drawing each subplot respectively
     def __init__(self):
-        plt.ion()   
+        plt.ion()
         plt.style.use('seaborn')
+        self.labels = ['Training Loss', 'Test Loss', 'Test Accuracy']
         self.x1_epoch = []
         self.y1_epoch = []
         self.y2_epoch = []
@@ -32,9 +36,10 @@ class Plotter:
         self.ax1.set_ylabel('Loss & Accuracy')
         # self.ax1.set_ylim(0, 1.3)
         self.ax2.set_title('Training Loss vs Batch')
-        self.ax1.plot(self.x1_epoch, self.y1_epoch, label="Training Loss")
-        self.ax1.plot(self.x1_epoch, self.y2_epoch, label="Test Loss")
-        self.ax1.plot(self.x1_epoch, self.y3_epoch, label="Test Accuracy", color='orange')
+        # collapse the three plots into one plot
+        y_epochs = [self.y1_epoch, self.y2_epoch, self.y3_epoch]
+        for i in range(len(y_epochs)):
+            self.ax1.plot(self.x1_epoch, y_epochs[i], label=self.labels[i])
         # set legend in the top right corner
         self.ax1.legend(loc='upper right')
         plt.pause(0.001)
@@ -48,11 +53,10 @@ class Plotter:
         self.y3_batch.append(y[2])
         self.ax2.set_title('Loss & Accuracy vs Batch Subset')
         self.ax2.set_xlabel('Batch')
-        self.ax2.set_ylabel('Loss') 
-        self.ax2.plot(self.x_batch, self.y1_batch, label="Training Loss")
-        self.ax2.plot(self.x_batch, self.y2_batch, label="Test Loss")
-        # made line orange to differentiate from losses
-        self.ax2.plot(self.x_batch, self.y3_batch, label="Test Accuracy", color='orange')
+        self.ax2.set_ylabel('Loss')
+        y_batches = [self.y1_batch, self.y2_batch, self.y3_batch]
+        for i in range(len(y_batches)):
+            self.ax2.plot(self.x_batch, y_batches[i], label=self.labels[i])
         self.ax2.legend(loc='upper right')
         plt.pause(0.001)
 
