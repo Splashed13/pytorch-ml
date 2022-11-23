@@ -5,6 +5,9 @@ from modules import ConvNet, Trainer
 import dataloader
 import time
 import sys
+import optuna
+
+study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
 
 # main function to identify the objects in the CIFAR10 dataset using modules.py and dataloader.py
 def main():

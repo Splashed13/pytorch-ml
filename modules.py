@@ -103,13 +103,13 @@ class Trainer:
                 images = images.to(self.device)
                 labels = labels.to(self.device)
 
+                self.optimizer.zero_grad()
                 # forward pass
                 outputs = self.model(images)
                 l = self.loss(outputs, labels)
                 train_loss = train_loss + l.item()
                 
                 # backward pass
-                self.optimizer.zero_grad() # we need to set the gradients to zero before starting to do backpropragation because PyTorch accumulates the gradients on subsequent backward passes.
                 l.backward() # calculate gradients
                 self.optimizer.step() # update the weight
         

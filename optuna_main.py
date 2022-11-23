@@ -22,9 +22,9 @@ def objective(trial):
         'optimizer': trial.suggest_categorical('optimizer', ['Adam', 'SGD', 'RMSprop'])
     }
 
-    CIFAR10_dataset = dataloader.CIFAR10Dataset(batch_size=Batch_Size, val_split=0.2)
+    CIFAR10_dataset:DataLoader.dataset = dataloader.CIFAR10Dataset(batch_size=Batch_Size, val_split=0.2)
 
-    model = Net().to(torch.device("cuda"))
+    model:nn.Module = Net().to(torch.device("cuda"))
 
     # for testing purposes
     loss = nn.CrossEntropyLoss().to(torch.device("cuda"))  # CrossEntropyLoss combines LogSoftmax and NLLLoss
